@@ -9,6 +9,7 @@ env:
   REGION: us-east1
   REPO_NAME: pr-reviewer
   IMAGE_NAME: pr-reviewer
+  SERVICE_ACCOUNT: pr-reviewer-sa
 
 jobs:
   docker:
@@ -34,3 +35,15 @@ jobs:
       - name: Push image
         run: |
           docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy pr-reviewer \
+            --image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/{{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:latest \
+            --region=${{ env.REGION }} \
+            --project=${{ env.PROJECT_ID }} \
+            --platform=managed \
+            --allow-unauthenticated \
+            --service-account=${{env.SERVICE_ACCOUNT}}@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
